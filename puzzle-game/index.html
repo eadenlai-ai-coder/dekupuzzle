@@ -1246,63 +1246,32 @@
             }
         });
 
-        // Leaderboard Functions - JSONBin API
-        const JSONBIN_URL = 'https://api.jsonbin.io/v3/b/69ba774bc3097a1dd536ce81';
-        const JSONBIN_API_KEY = '$2a$10$jRH33snOU27YfNyZm54Ky.CxD90WgdGr1yfX1xB5j7nmtEiyxv0A.';
+        // Leaderboard Functions - Cloudflare Worker API
+        const API_BASE = 'https://eaden3030.eatrolay.workers.dev';
         let currentPlayerName = '';
         let tempTotalTime = 0;
 
-        // Load leaderboard from JSONBin
+        // Load leaderboard from Cloudflare Worker
         async function loadLeaderboardFromCloud() {
             try {
-                const response = await fetch(`${JSONBIN_URL}/latest`);
+                const response = await fetch(`${API_BASE}/leaderboard`);
                 if (!response.ok) throw new Error('Network response was not ok');
-                const data = await response.json();
-                return data.record || [];
+                return await response.json();
             } catch (error) {
                 console.error('Failed to load leaderboard:', error);
                 return [];
             }
         }
 
-        // Submit score to JSONBin (requires API Key)
+        // Submit score to Cloudflare Worker
         async function submitScoreToCloud(name, time, moves) {
             try {
-                // 先读取现有数据
-                const existing = await loadLeaderboardFromCloud();
-                
-                // 添加新记录
-                const newEntry = {
-                    name: name.slice(0, 12),
-                    time: time,
-                    moves: moves,
-                    date: new Date().toISOString()
-                };
-                
-                const updated = [...existing, newEntry];
-                
-                // 排序并只保留前50条
-                const sorted = updated.sort((a, b) => {
-                    if (a.time !== b.time) return a.time - b.time;
-                    return a.moves - b.moves;
-                }).slice(0, 50);
-                
-                // 更新到 JSONBin
-                const response = await fetch(JSONBIN_URL, {
-                    method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-Access-Key': JSONBIN_API_KEY
-                    },
-                    body: JSON.stringify(sorted)
+                const response = await fetch(`${API_BASE}/leaderboard`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, time, moves })
                 });
-                
-                if (!response.ok) {
-                    // 如果 API Key 无效，尝试无密钥写入（可能失败）
-                    console.warn('API Key may be invalid, trying without key...');
-                    return { error: 'API Key required for write access' };
-                }
-                
+                if (!response.ok) throw new Error('Network response was not ok');
                 return await response.json();
             } catch (error) {
                 console.error('Failed to submit score:', error);

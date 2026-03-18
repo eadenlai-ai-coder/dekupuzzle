@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>复原 deku 大挑战</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --rh-green: #00C805;
+            --rh-green-dark: #00B403;
+            --rh-black: #040D14;
+            --rh-gray-100: #F5F8FA;
+            --rh-gray-200: #E3E9ED;
+            --rh-gray-300: #C5CCD2;
+            --rh-gray-400: #8C939A;
+            --rh-gray-500: #5B636B;
+            --rh-white: #FFFFFF;
+            --rh-border: #E3E9ED;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--rh-gray-100);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+            overflow: hidden;
+            touch-action: none;
+            overscroll-behavior: none;
+        }
+
+        /* Header */
+        .header {
+            width: 100%;
+            max-width: 420px;
+            margin-bottom: 10px;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--rh-white);
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--rh-border);
+            box-shadow: 0 1px 3px rgba(4, 13, 20, 0.04);
+        }
+
+        .header-title h1 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--rh-black);
+            letter-spacing: -0.02em;
+        }
+
+        .header-subtitle {
+            font-size: 0.7rem;
+            color: var(--rh-gray-500);
+            margin-top: 1px;
+        }
+
+        .level-badge {
+            background: var(--rh-green);
+            color: var(--rh-white);
+            padding: 5px 12px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-restart-btn {
+            border: none;
+            border-radius: 8px;
+            background: var(--rh-gray-100);
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--rh-black);
+            white-space: nowrap;
+        }
+
+        .header-restart-btn:hover {
+            background: var(--rh-gray-200);
+        }
+
+        .header-restart-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Game Container */
+        .game-container {
+            background: var(--rh-white);
+            border-radius: 16px;
+            padding: 14px;
+            max-width: 420px;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid var(--rh-border);
+            box-shadow: 0 1px 3px rgba(4, 13, 20, 0.04);
+        }
+
+        /* Level Progress Section */
+        .level-section {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .level-progress {
+            display: flex;
+            gap: 3px;
+            padding: 6px;
+            background: var(--rh-gray-100);
+            border-radius: 8px;
+            flex: 1;
+            justify-content: space-between;
+        }
+
+        .level-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            flex-shrink: 0;
+        }
+
+        .icon-btn-small {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--rh-border);
+            border-radius: 8px;
+            background: var(--rh-white);
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .icon-btn-small:hover {
+            background: var(--rh-gray-100);
+        }
+
+        .icon-btn-small:active {
+            transform: scale(0.95);
+        }
+
+        .icon-btn-small svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--rh-black);
+        }
+
+        .level-dot.pending {
+            background: var(--rh-white);
+            color: var(--rh-gray-400);
+            border-color: var(--rh-gray-200);
+        }
+
+        .level-dot.current {
+            background: var(--rh-green);
+            color: var(--rh-white);
+            border-color: var(--rh-green);
+        }
+
+        .level-dot.completed {
+            background: var(--rh-black);
+            color: var(--rh-white);
+            border-color: var(--rh-black);
+        }
+
+        /* Stats - Bottom */
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--rh-gray-100);
+            border-radius: 10px;
+        }
+
+        .stat {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--rh-black);
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--rh-gray-500);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Puzzle Board */
+        .puzzle-board {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--rh-gray-100);
+            border-radius: 12px;
+            padding: 12px;
+            min-height: 0;
+        }
+
+        .puzzle-grid {
+            display: grid;
+            gap: 3px;
+            background: var(--rh-gray-300);
+            padding: 3px;
+            border-radius: 8px;
+        }
+
+        .puzzle-piece {
+            background-size: cover;
+            background-position: center;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+        }
+
+        .puzzle-piece:hover {
+            opacity: 0.9;
+        }
+
+        .puzzle-piece.selected {
+            box-shadow: 0 0 0 3px var(--rh-green);
+            z-index: 10;
+        }
+
+        .puzzle-piece.correct {
+            animation: success-pulse 0.4s ease;
+        }
+
+        @keyframes success-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        /* No Images State */
+        .no-images {
+            text-align: center;
+            padding: 40px;
+            color: var(--rh-gray-500);
+        }
+
+        .no-images-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        /* Modal Base */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(4, 13, 20, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-card {
+            background: var(--rh-white);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 360px;
+            width: 100%;
+            text-align: center;
+            animation: modal-in 0.3s ease;
+        }
+
+        @keyframes modal-in {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            background: var(--rh-green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--rh-black);
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            font-size: 1rem;
+            color: var(--rh-gray-500);
+            margin-bottom: 24px;
+        }
+
+        .modal-stats {
+            background: var(--rh-gray-100);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .modal-stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--rh-border);
+        }
+
+        .modal-stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .modal-stat-label {
+            color: var(--rh-gray-500);
+            font-size: 14px;
+        }
+
+        .modal-stat-value {
+            color: var(--rh-black);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: var(--rh-green);
+            color: var(--rh-white);
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-primary:hover {
+            background: var(--rh-green-dark);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        /* Preview Modal */
+        .preview-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(4, 13, 20, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .preview-modal.show {
+            display: flex;
+        }
+
+        .preview-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 80%;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 16px;
+        }
+
+        .preview-close {
+            position: absolute;
+            top: -48px;
+            right: 0;
+            background: none;
+            border: none;
+            color: var(--rh-white);
+            font-size: 32px;
+            cursor: pointer;
+        }
+
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            z-index: 1001;
+        }
+
+        /* Leaderboard Button */
+        .leaderboard-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 8px;
+            background: var(--rh-black);
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .leaderboard-btn:hover {
+            background: var(--rh-gray-500);
+        }
+
+        .leaderboard-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--rh-white);
+        }
+
+        /* Leaderboard Modal */
+        .leaderboard-list {
+            max-height: 320px;
+            overflow-y: auto;
+            margin: 16px 0;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--rh-gray-100);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: all 0.15s;
+        }
+
+        .leaderboard-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .leaderboard-item.current-user {
+            background: var(--rh-green);
+            color: var(--rh-white);
+        }
+
+        .leaderboard-rank {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .leaderboard-rank.gold {
+            background: #FFD700;
+            color: #000;
+        }
+
+        .leaderboard-rank.silver {
+            background: #C0C0C0;
+            color: #000;
+        }
+
+        .leaderboard-rank.bronze {
+            background: #CD7F32;
+            color: #fff;
+        }
+
+        .leaderboard-rank.normal {
+            background: var(--rh-gray-300);
+            color: var(--rh-black);
+        }
+
+        .leaderboard-item.current-user .leaderboard-rank.normal {
+            background: rgba(255,255,255,0.3);
+            color: var(--rh-white);
+        }
+
+        .leaderboard-info {
+            flex: 1;
+            text-align: left;
+        }
+
+        .leaderboard-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .leaderboard-date {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .leaderboard-stats {
+            text-align: right;
+        }
+
+        .leaderboard-time {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .leaderboard-moves {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .leaderboard-empty {
+            padding: 40px 20px;
+            color: var(--rh-gray-400);
+            font-size: 14px;
+        }
+
+        /* Name Input Modal */
+        .name-input-group {
+            margin: 20px 0;
+        }
+
+        .name-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--rh-gray-200);
+            border-radius: 12px;
+            font-size: 16px;
+            text-align: center;
+            transition: all 0.15s;
+            outline: none;
+        }
+
+        .name-input:focus {
+            border-color: var(--rh-green);
+        }
+
+        .name-input::placeholder {
+            color: var(--rh-gray-400);
+        }
+
+        .input-hint {
+            font-size: 12px;
+            color: var(--rh-gray-400);
+            margin-top: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+
+            .header-content {
+                padding: 8px 12px;
+            }
+
+            .header-title h1 {
+                font-size: 0.9rem;
+            }
+
+            .level-badge {
+                padding: 4px 10px;
+                font-size: 0.75rem;
+            }
+
+            .game-container {
+                padding: 10px;
+            }
+
+            .level-dot {
+                width: 20px;
+                height: 20px;
+                font-size: 9px;
+            }
+
+            .header-restart-btn {
+                width: 24px;
+                height: 24px;
+            }
+
+            .header-restart-btn svg {
+                width: 12px;
+                height: 12px;
+            }
+
+            .modal-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="header-title">
+                <h1>🧩 蝶库拼拼乐</h1>
+                <div class="header-subtitle">帮帮大哥！</div>
+            </div>
+            <div class="header-actions">
+                <button class="leaderboard-btn" onclick="showLeaderboard()" title="排行榜">
+                    <svg viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1a5.01 5.01 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82A2.51 2.51 0 0 1 5 8zm14 0c0 1.38-1.12 2.5-2.5 2.5S14 9.38 14 8V7h5v1z"/></svg>
+                </button>
+                <button class="header-restart-btn" onclick="restartGame()" title="重新开始全部">重头开始</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="game-container">
+        <!-- Level Section with Buttons -->
+        <div class="level-section">
+            <button class="icon-btn-small" onclick="showPreview()" title="查看原图">
+                <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </button>
+            
+            <div class="level-progress" id="levelProgress"></div>
+            
+            <button class="icon-btn-small" onclick="restartLevel()" title="重新开始">
+                <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+            </button>
+        </div>
+
+        <!-- Puzzle -->
+        <div class="puzzle-board" id="puzzleBoard">
+            <div class="puzzle-grid" id="puzzleGrid"></div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="timer">00:00</div>
+                <div class="stat-label">总时间</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="moves">0</div>
+                <div class="stat-label">步数</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="difficultyDisplay">3×3</div>
+                <div class="stat-label">难度</div>
+            </div>
+        </div>
+
+        <!-- No Images Warning -->
+        <div class="no-images" id="noImages" style="display: none;">
+            <div class="no-images-icon">📁</div>
+            <h3>没有找到图片</h3>
+            <p>请在 images 文件夹放入图片</p>
+        </div>
+    </main>
+
+    <!-- Preview Modal -->
+    <div class="preview-modal" id="previewModal" onclick="closePreview()">
+        <button class="preview-close">&times;</button>
+        <div class="preview-content">
+            <img class="preview-image" id="previewImage" src="" alt="预览">
+        </div>
+    </div>
+
+    <!-- Level Complete Modal -->
+    <div class="modal-overlay" id="victoryModal">
+        <div class="modal-card">
+            <div class="modal-icon">🎉</div>
+            <h2 class="modal-title">第 <span id="completedLevel">1</span> 关完成！</h2>
+            <p class="modal-subtitle">干得漂亮！</p>
+            
+            <div class="modal-stats">
+                <div class="modal-stat-row">
+                    <span class="modal-stat-label">⏱️ 用时</span>
+                    <span class="modal-stat-value" id="levelTime">00:00</span>
+                </div>
+                <div class="modal-stat-row">
+                    <span class="modal-stat-label">🎯 步数</span>
+                    <span class="modal-stat-value" id="levelMoves">0</span>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="nextLevel()">下一关 ➡️</button>
+        </div>
+    </div>
+
+    <!-- Game Complete Modal -->
+    <div class="modal-overlay" id="completeModal">
+        <div class="modal-card">
+            <div class="modal-icon">🏆</div>
+            <h2 class="modal-title">恭喜通关！</h2>
+            <p class="modal-subtitle">你完成了全部 10 关挑战！</p>
+            
+            <div class="modal-stats">
+                <div class="modal-stat-row">
+                    <span class="modal-stat-label">⏱️ 总用时</span>
+                    <span class="modal-stat-value" id="totalTime">00:00</span>
+                </div>
+                <div class="modal-stat-row">
+                    <span class="modal-stat-label">🎯 总步数</span>
+                    <span class="modal-stat-value" id="totalMoves">0</span>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="restartGame()">🔄 再玩一次</button>
+        </div>
+    </div>
+
+    <!-- Name Input Modal -->
+    <div class="modal-overlay" id="nameInputModal">
+        <div class="modal-card">
+            <div class="modal-icon">🎉</div>
+            <h2 class="modal-title">恭喜通关！</h2>
+            <p class="modal-subtitle">你完成了全部 10 关挑战！</p>
+            
+            <div class="modal-stats">
+                <div class="modal-stat-row">
+                    <span class="modal-stat-label">⏱️ 总用时</span>
+                    <span class="modal-stat-value" id="nameInputTime">00:00</span>
+                </div>
+                <div class="modal-stat-row">
+                    <span class="modal-stat-label">🎯 总步数</span>
+                    <span class="modal-stat-value" id="nameInputMoves">0</span>
+                </div>
+            </div>
+
+            <div class="name-input-group">
+                <input type="text" class="name-input" id="playerNameInput" placeholder="输入你的名字" maxlength="12">
+                <div class="input-hint">输入名字记录到排行榜</div>
+            </div>
+
+            <button class="btn-primary" onclick="submitScore()">提交成绩 📤</button>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div class="modal-overlay" id="leaderboardModal">
+        <div class="modal-card">
+            <div class="modal-icon">🏆</div>
+            <h2 class="modal-title">排行榜</h2>
+            <p class="modal-subtitle" id="leaderboardSubtitle">共鸣图感大师</p>
+            
+            <div class="leaderboard-list" id="leaderboardList">
+                <!-- Leaderboard items will be inserted here -->
+            </div>
+
+            <button class="btn-primary" onclick="closeLeaderboard()">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Configuration
+        const TOTAL_LEVELS = 10;
+        const IMAGE_FOLDER = 'images/';
+
+        // Level settings: 1-3关 2x2, 4-9关 3x3, 第10关 4x4
+        function getGridSize(level) {
+            if (level <= 3) return 2;
+            if (level <= 9) return 3;
+            return 4;
+        }
+
+        // Get difficulty label
+        function getDifficultyLabel(size) {
+            const labels = { 2: 'NPC', 3: '顶级', 4: '夯' };
+            return labels[size] || `${size}×${size}`;
+        }
+
+        // Game State
+        let currentLevel = 1;
+        let completedLevels = [];
+        let usedImages = []; // Track used images to avoid repetition
+        let currentImage = null;
+        let gridSize = 2;
+        let pieces = [];
+        let selectedPiece = null;
+        let moves = 0;
+        let levelMoves = 0;
+        let totalMoves = 0;
+        let startTime = null;
+        let levelStartTime = null;
+        let totalStartTime = null;
+        let totalElapsedTime = 0; // Accumulated game time
+        let timerInterval = null;
+        let isPlaying = false;
+        let levelStats = [];
+
+        // Initialize
+        window.onload = () => {
+            loadGameState();
+            initGame();
+        };
+
+        // Handle resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (pieces.length > 0) renderGrid();
+            }, 100);
+        });
+
+        // Prevent scrolling
+        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+        // Load saved progress - disabled, always start from level 1
+        function loadGameState() {
+            // Always start fresh - no progress persistence
+            currentLevel = 1;
+            completedLevels = [];
+            levelStats = [];
+            totalMoves = 0;
+            totalStartTime = null;
+            totalElapsedTime = 0;
+        }
+
+        // Save progress - disabled
+        function saveGameState() {
+            // Progress not saved - always start from level 1 on refresh
+        }
+
+        // Initialize game
+        function initGame() {
+            renderLevelProgress();
+            loadLevel(currentLevel);
+        }
+
+        // Render level progress dots
+        function renderLevelProgress() {
+            const container = document.getElementById('levelProgress');
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= TOTAL_LEVELS; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'level-dot';
+                dot.textContent = i;
+                
+                if (completedLevels.includes(i)) {
+                    dot.classList.add('completed');
+                } else if (i === currentLevel) {
+                    dot.classList.add('current');
+                } else {
+                    dot.classList.add('pending');
+                }
+                
+                container.appendChild(dot);
+            }
+        }
+
+        // Load specific level - randomly select from available images
+        function loadLevel(level) {
+            currentLevel = level;
+            gridSize = getGridSize(level);
+            
+            // Update UI
+            document.getElementById('difficultyDisplay').textContent = getDifficultyLabel(gridSize);
+            renderLevelProgress();
+
+            // Scan and load random image
+            scanAndLoadRandomImage();
+        }
+
+        // Scan for available images and load a random one (no repetition)
+        function scanAndLoadRandomImage() {
+            const testExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+            let foundImages = [];
+            let checkedCount = 0;
+            
+            for (let i = 1; i <= 20; i++) {
+                checkImageExists(i, testExtensions, 0, (exists, path) => {
+                    checkedCount++;
+                    if (exists && path) foundImages.push(path);
+                    
+                    if (checkedCount >= 20) {
+                        if (foundImages.length === 0) {
+                            document.getElementById('noImages').style.display = 'block';
+                            document.getElementById('puzzleBoard').style.display = 'none';
+                        } else {
+                            // Filter out used images
+                            let availableImages = foundImages.filter(img => !usedImages.includes(img));
+                            
+                            // If all images used, reset the used list
+                            if (availableImages.length === 0) {
+                                usedImages = [];
+                                availableImages = foundImages;
+                            }
+                            
+                            // Pick random image from available
+                            const randomPath = availableImages[Math.floor(Math.random() * availableImages.length)];
+                            usedImages.push(randomPath);
+                            loadImageByPath(randomPath);
+                        }
+                    }
+                });
+            }
+        }
+
+        // Check if image exists
+        function checkImageExists(num, extList, extIndex, callback) {
+            if (extIndex >= extList.length) {
+                callback(false, null);
+                return;
+            }
+            
+            const img = new Image();
+            const path = `${IMAGE_FOLDER}${num}${extList[extIndex]}`;
+            
+            img.onload = () => callback(true, path);
+            img.onerror = () => checkImageExists(num, extList, extIndex + 1, callback);
+            img.src = path;
+        }
+
+        // Load image by path
+        function loadImageByPath(path) {
+            const img = new Image();
+            img.onload = () => {
+                currentImage = img;
+                document.getElementById('noImages').style.display = 'none';
+                document.getElementById('puzzleBoard').style.display = 'flex';
+                startLevel();
+            };
+            img.src = path;
+        }
+
+        // Start current level
+        function startLevel() {
+            console.log('Starting level', currentLevel, '- timerInterval:', timerInterval);
+            pieces = [];
+            selectedPiece = null;
+            moves = 0;
+            levelMoves = 0;
+            isPlaying = true;
+            levelStartTime = Date.now();
+            
+            // Only set totalStartTime on first level, otherwise keep accumulating
+            if (!totalStartTime) totalStartTime = Date.now();
+
+            updateMoves();
+            updateTimer(); // Update immediately to show correct time
+            startTimer();
+            createPieces();
+            shufflePieces();
+            renderGrid();
+        }
+
+        // Create puzzle pieces
+        function createPieces() {
+            pieces = [];
+            const totalPieces = gridSize * gridSize;
+
+            for (let i = 0; i < totalPieces; i++) {
+                pieces.push({
+                    id: i,
+                    currentPos: i,
+                    correctPos: i,
+                    row: Math.floor(i / gridSize),
+                    col: i % gridSize
+                });
+            }
+        }
+
+        // Shuffle pieces
+        function shufflePieces() {
+            const totalShuffles = gridSize * 30;
+            for (let i = 0; i < totalShuffles; i++) {
+                const idx1 = Math.floor(Math.random() * pieces.length);
+                const idx2 = Math.floor(Math.random() * pieces.length);
+                if (idx1 !== idx2) {
+                    [pieces[idx1], pieces[idx2]] = [pieces[idx2], pieces[idx1]];
+                }
+            }
+
+            if (isSolved()) shufflePieces();
+        }
+
+        // Render grid
+        function renderGrid() {
+            const grid = document.getElementById('puzzleGrid');
+            const board = document.getElementById('puzzleBoard');
+            grid.innerHTML = '';
+            grid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+
+            const boardRect = board.getBoundingClientRect();
+            const maxSize = Math.min(boardRect.width, boardRect.height) - 32;
+            const pieceSize = (maxSize - (gridSize - 1) * 3) / gridSize;
+
+            pieces.forEach((piece, index) => {
+                const div = document.createElement('div');
+                div.className = 'puzzle-piece';
+                div.style.width = `${pieceSize}px`;
+                div.style.height = `${pieceSize}px`;
+                div.dataset.index = index;
+
+                const bgX = (piece.correctPos % gridSize) * (100 / (gridSize - 1));
+                const bgY = Math.floor(piece.correctPos / gridSize) * (100 / (gridSize - 1));
+                div.style.backgroundImage = `url(${currentImage.src})`;
+                div.style.backgroundSize = `${gridSize * 100}%`;
+                div.style.backgroundPosition = `${bgX}% ${bgY}%`;
+
+                div.onclick = () => handlePieceClick(index);
+                grid.appendChild(div);
+            });
+        }
+
+        // Handle piece click
+        function handlePieceClick(index) {
+            if (!isPlaying) return;
+
+            const pieceElements = document.querySelectorAll('.puzzle-piece');
+
+            if (selectedPiece === null) {
+                selectedPiece = index;
+                pieceElements[index].classList.add('selected');
+            } else if (selectedPiece === index) {
+                pieceElements[index].classList.remove('selected');
+                selectedPiece = null;
+            } else {
+                swapPieces(selectedPiece, index);
+                pieceElements[selectedPiece].classList.remove('selected');
+                selectedPiece = null;
+            }
+        }
+
+        // Swap pieces
+        function swapPieces(idx1, idx2) {
+            [pieces[idx1], pieces[idx2]] = [pieces[idx2], pieces[idx1]];
+            moves++;
+            levelMoves++;
+            totalMoves++;
+            updateMoves();
+            renderGrid();
+            checkWin();
+        }
+
+        // Check solved
+        function isSolved() {
+            return pieces.every((piece, index) => piece.correctPos === index);
+        }
+
+        // Check win
+        function checkWin() {
+            if (isSolved()) {
+                console.log('Level complete! Stopping timer...');
+                isPlaying = false;
+                
+                // Save elapsed time for this level
+                const levelTime = Math.floor((Date.now() - levelStartTime) / 1000);
+                totalElapsedTime += levelTime;
+                
+                stopTimer();
+
+                const pieceElements = document.querySelectorAll('.puzzle-piece');
+                pieceElements.forEach((el, i) => {
+                    setTimeout(() => el.classList.add('correct'), i * 30);
+                });
+
+                levelStats[currentLevel - 1] = { time: levelTime, moves: levelMoves };
+
+                if (!completedLevels.includes(currentLevel)) {
+                    completedLevels.push(currentLevel);
+                }
+
+                setTimeout(showLevelComplete, 600);
+            }
+        }
+
+        // Show level complete modal
+        function showLevelComplete() {
+            document.getElementById('completedLevel').textContent = currentLevel;
+            document.getElementById('levelTime').textContent = document.getElementById('timer').textContent;
+            document.getElementById('levelMoves').textContent = levelMoves;
+            
+            const modal = document.getElementById('victoryModal');
+            modal.classList.add('show');
+            
+            if (currentLevel >= TOTAL_LEVELS) {
+                setTimeout(() => {
+                    modal.classList.remove('show');
+                    showGameComplete();
+                }, 2000);
+            } else {
+                createConfetti();
+            }
+        }
+
+        // Next level
+        function nextLevel() {
+            console.log('Next level clicked, starting level', currentLevel + 1);
+            document.getElementById('victoryModal').classList.remove('show');
+            if (currentLevel < TOTAL_LEVELS) {
+                loadLevel(currentLevel + 1);
+            }
+        }
+
+        // Restart current level
+        function restartLevel() {
+            if (confirm('确定要重新开始本关吗？')) {
+                startLevel();
+            }
+        }
+
+        // Timer functions
+        function startTimer() {
+            stopTimer(); // Ensure any existing timer is cleared first
+            timerInterval = setInterval(updateTimer, 1000);
+            console.log('Timer started, interval:', timerInterval);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                console.log('Stopping timer, interval:', timerInterval);
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function resetTimer() {
+            stopTimer();
+            updateTimer(); // Immediately update to show correct total time
+        }
+
+        function updateTimer() {
+            // Calculate: accumulated time + current level time (if playing)
+            let currentElapsed = totalElapsedTime;
+            if (isPlaying && levelStartTime) {
+                currentElapsed += Math.floor((Date.now() - levelStartTime) / 1000);
+            }
+            const minutes = Math.floor(currentElapsed / 60).toString().padStart(2, '0');
+            const seconds = (currentElapsed % 60).toString().padStart(2, '0');
+            document.getElementById('timer').textContent = `${minutes}:${seconds}`;
+        }
+
+        function updateMoves() {
+            document.getElementById('moves').textContent = moves;
+        }
+
+        // Show preview
+        function showPreview() {
+            if (!currentImage) return;
+            document.getElementById('previewImage').src = currentImage.src;
+            document.getElementById('previewModal').classList.add('show');
+        }
+
+        function closePreview() {
+            document.getElementById('previewModal').classList.remove('show');
+        }
+
+        // Confetti
+        function createConfetti() {
+            const colors = ['#00C805', '#040D14', '#5B636B', '#C5CCD2'];
+            
+            for (let i = 0; i < 60; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.top = '-10px';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    document.body.appendChild(confetti);
+
+                    const duration = 2 + Math.random() * 2;
+                    confetti.animate([
+                        { transform: `translateY(0) rotate(0deg)`, opacity: 1 },
+                        { transform: `translateY(100vh) rotate(720deg)`, opacity: 0 }
+                    ], {
+                        duration: duration * 1000,
+                        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                    }).onfinish = () => confetti.remove();
+                }, i * 30);
+            }
+        }
+
+        // Keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closePreview();
+                closeLeaderboard();
+            }
+            if (e.key === 'Enter' && document.getElementById('nameInputModal').classList.contains('show')) {
+                submitScore();
+            }
+        });
+
+        // Leaderboard Functions - Cloudflare Worker API
+        const API_BASE = 'https://eaden3030.eatrolay.workers.dev';
+        let currentPlayerName = '';
+        let tempTotalTime = 0;
+
+        // Load leaderboard from Cloudflare Worker
+        async function loadLeaderboardFromCloud() {
+            try {
+                const response = await fetch(`${API_BASE}/leaderboard`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to load leaderboard:', error);
+                return [];
+            }
+        }
+
+        // Submit score to Cloudflare Worker
+        async function submitScoreToCloud(name, time, moves) {
+            try {
+                const response = await fetch(`${API_BASE}/leaderboard`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, time, moves })
+                });
+                if (!response.ok) throw new Error('Network response was not ok');
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to submit score:', error);
+                return { error: error.message };
+            }
+        }
+
+        // Show game complete - modified to show name input first
+        function showGameComplete() {
+            tempTotalTime = totalElapsedTime;
+            const minutes = Math.floor(tempTotalTime / 60).toString().padStart(2, '0');
+            const seconds = (tempTotalTime % 60).toString().padStart(2, '0');
+            
+            document.getElementById('nameInputTime').textContent = `${minutes}:${seconds}`;
+            document.getElementById('nameInputMoves').textContent = totalMoves;
+            document.getElementById('playerNameInput').value = currentPlayerName || '';
+            document.getElementById('nameInputModal').classList.add('show');
+            createConfetti();
+        }
+
+        // Submit score to leaderboard
+        async function submitScore() {
+            const nameInput = document.getElementById('playerNameInput');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                nameInput.style.borderColor = '#ff4444';
+                setTimeout(() => {
+                    nameInput.style.borderColor = '';
+                }, 1000);
+                return;
+            }
+            
+            currentPlayerName = name;
+            
+            console.log('Submitting score:', { name, time: tempTotalTime, moves: totalMoves });
+            
+            // 提交到云端
+            const result = await submitScoreToCloud(name, tempTotalTime, totalMoves);
+            console.log('Submit result:', result);
+            
+            if (result.error) {
+                alert('提交失败: ' + result.error);
+                return;
+            }
+            
+            document.getElementById('nameInputModal').classList.remove('show');
+            showLeaderboard(name);
+        }
+
+        // Show leaderboard
+        async function showLeaderboard(highlightName = null) {
+            const listContainer = document.getElementById('leaderboardList');
+            listContainer.innerHTML = '<div class="leaderboard-empty">加载中...</div>';
+            
+            const leaderboard = await loadLeaderboardFromCloud();
+            
+            if (leaderboard.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="leaderboard-empty">
+                        🏃 还没有人上榜<br>快来成为第一个！
+                    </div>
+                `;
+            } else {
+                const highlightNameToUse = highlightName || currentPlayerName;
+                listContainer.innerHTML = leaderboard.map((entry, index) => {
+                    const rank = index + 1;
+                    const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
+                    const isCurrentUser = entry.name === highlightNameToUse && entry.time === tempTotalTime && entry.moves === totalMoves;
+                    const rowClass = isCurrentUser ? 'current-user' : '';
+                    
+                    const minutes = Math.floor(entry.time / 60).toString().padStart(2, '0');
+                    const seconds = (entry.time % 60).toString().padStart(2, '0');
+                    const date = new Date(entry.date);
+                    const year = date.getFullYear();
+                    const month = date.getMonth() + 1;
+                    const day = date.getDate();
+                    const dateStr = `${year}.${month}.${day}`;
+                    
+                    return `
+                        <div class="leaderboard-item ${rowClass}">
+                            <div class="leaderboard-rank ${rankClass}">${rank}</div>
+                            <div class="leaderboard-info">
+                                <div class="leaderboard-name">${escapeHtml(entry.name)}</div>
+                                <div class="leaderboard-date">${dateStr}</div>
+                            </div>
+                            <div class="leaderboard-stats">
+                                <div class="leaderboard-time">${minutes}:${seconds}</div>
+                                <div class="leaderboard-moves">${entry.moves} 步</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            document.getElementById('leaderboardModal').classList.add('show');
+        }
+
+        // Close leaderboard
+        function closeLeaderboard() {
+            document.getElementById('leaderboardModal').classList.remove('show');
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Restart game - with confirmation
+        function restartGame() {
+            if (!confirm('确定要重新开始全部关卡吗？')) {
+                return;
+            }
+            currentLevel = 1;
+            completedLevels = [];
+            usedImages = [];
+            levelStats = [];
+            totalMoves = 0;
+            totalStartTime = null;
+            totalElapsedTime = 0;
+            tempTotalTime = 0;
+            document.getElementById('completeModal').classList.remove('show');
+            document.getElementById('nameInputModal').classList.remove('show');
+            document.getElementById('leaderboardModal').classList.remove('show');
+            initGame();
+        }
+    </script>
+</body>
+</html>

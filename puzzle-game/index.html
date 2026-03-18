@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>复原 deku 大挑战</title>
+    <title>蝶库拼拼乐</title>
+    <script src="https://imgcache.qq.com/qcloud/tcbjs/1.12.0/tcb.js"></script>
     <style>
         * {
             margin: 0;
@@ -1246,33 +1247,55 @@
             }
         });
 
-        // Leaderboard Functions - Cloudflare Worker API
-        const API_BASE = 'https://eaden3030.eatrolay.workers.dev';
+        // Leaderboard Functions - 腾讯云 CloudBase
+        const TCB_ENV_ID = 'dekupuzzle-3ghapib1eba7de6f';
+        let tcbApp = null;
         let currentPlayerName = '';
         let tempTotalTime = 0;
 
-        // Load leaderboard from Cloudflare Worker
+        // 初始化 CloudBase
+        async function initCloudBase() {
+            if (!tcbApp) {
+                tcbApp = tcb.init({
+                    env: TCB_ENV_ID
+                });
+                // 匿名登录
+                await tcbApp.auth().anonymousAuthProvider().signIn();
+            }
+            return tcbApp;
+        }
+
+        // Load leaderboard from CloudBase
         async function loadLeaderboardFromCloud() {
             try {
-                const response = await fetch(`${API_BASE}/leaderboard`);
-                if (!response.ok) throw new Error('Network response was not ok');
-                return await response.json();
+                const app = await initCloudBase();
+                const db = app.database();
+                const { data } = await db.collection('leaderboard')
+                    .orderBy('time', 'asc')
+                    .orderBy('moves', 'asc')
+                    .limit(50)
+                    .get();
+                return data || [];
             } catch (error) {
                 console.error('Failed to load leaderboard:', error);
                 return [];
             }
         }
 
-        // Submit score to Cloudflare Worker
+        // Submit score to CloudBase
         async function submitScoreToCloud(name, time, moves) {
             try {
-                const response = await fetch(`${API_BASE}/leaderboard`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, time, moves })
+                const app = await initCloudBase();
+                const db = app.database();
+                
+                await db.collection('leaderboard').add({
+                    name: name.slice(0, 12),
+                    time: time,
+                    moves: moves,
+                    date: new Date().toISOString()
                 });
-                if (!response.ok) throw new Error('Network response was not ok');
-                return await response.json();
+                
+                return { success: true };
             } catch (error) {
                 console.error('Failed to submit score:', error);
                 return { error: error.message };

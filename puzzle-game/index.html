@@ -837,6 +837,8 @@
         let timerInterval = null;
         let isPlaying = false;
         let levelStats = [];
+        let isSubmitting = false; // 防止重复提交锁
+        let preloadedImages = {}; // 预加载的图片缓存
 
         // Initialize
         window.onload = () => {
@@ -965,12 +967,20 @@
 
         // Load image by path
         function loadImageByPath(path) {
+            // 显示加载中
+            const board = document.getElementById('puzzleBoard');
+            board.innerHTML = '<div style="text-align:center;padding:40px;color:#8C939A;">加载图片中...</div>';
+            
             const img = new Image();
             img.onload = () => {
                 currentImage = img;
                 document.getElementById('noImages').style.display = 'none';
-                document.getElementById('puzzleBoard').style.display = 'flex';
+                board.style.display = 'flex';
+                board.innerHTML = '<div class="puzzle-grid" id="puzzleGrid"></div>';
                 startLevel();
+            };
+            img.onerror = () => {
+                board.innerHTML = '<div style="text-align:center;padding:40px;color:#ff4444;">图片加载失败</div>';
             };
             img.src = path;
         }
@@ -1315,6 +1325,12 @@
 
         // Submit score to leaderboard
         async function submitScore() {
+            // 防止重复提交
+            if (isSubmitting) {
+                console.log('Already submitting, please wait...');
+                return;
+            }
+            
             const nameInput = document.getElementById('playerNameInput');
             const name = nameInput.value.trim();
             
@@ -1326,21 +1342,41 @@
                 return;
             }
             
+            // 锁定提交状态
+            isSubmitting = true;
+            const submitBtn = document.querySelector('#nameInputModal .btn-primary');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = '提交中...';
+            submitBtn.disabled = true;
+            
             currentPlayerName = name;
             
             console.log('Submitting score:', { name, time: tempTotalTime, moves: totalMoves });
             
-            // 提交到云端
-            const result = await submitScoreToCloud(name, tempTotalTime, totalMoves);
-            console.log('Submit result:', result);
-            
-            if (result.error) {
-                alert('提交失败: ' + result.error);
-                return;
+            try {
+                // 提交到云端
+                const result = await submitScoreToCloud(name, tempTotalTime, totalMoves);
+                console.log('Submit result:', result);
+                
+                if (result.error) {
+                    alert('提交失败: ' + result.error);
+                    isSubmitting = false;
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+                
+                document.getElementById('nameInputModal').classList.remove('show');
+                showLeaderboard(name);
+            } catch (error) {
+                console.error('Submit error:', error);
+                alert('提交失败，请重试');
+            } finally {
+                // 重置提交状态
+                isSubmitting = false;
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
             }
-            
-            document.getElementById('nameInputModal').classList.remove('show');
-            showLeaderboard(name);
         }
 
         // Show leaderboard
